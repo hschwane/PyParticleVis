@@ -43,7 +43,6 @@ class Canvas(app.Canvas):
                                           (-1,1,1), (-1,1,-1), (-1,-1,1),
                                           (-1,-1,-1)]
 
-
         # vector field for color
         # self.program['input_vector'] =
         # scalar field for color
@@ -92,7 +91,7 @@ class Canvas(app.Canvas):
         self.camInputHandler = CameraInputHandler(self.cam)
 
         # projection matrix
-        self.reset_projection()
+        self.resetProjection()
 
         # timing
         self._lastTime = time.time()
