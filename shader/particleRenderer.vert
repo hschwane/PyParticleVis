@@ -13,6 +13,8 @@ uniform float lowerBound; // lowest value of scalar field / vector field magnitu
 uniform mat4 model; // model matrix of the object
 uniform bool enableSizePerParticle; // should every particle have a differnt size?
 uniform float sphereRadius; // radius of the spheres when enableSizePerParticle is false
+uniform bool customTransferFunc; // set to true to use the custom transfer function (the sampler 1D)
+uniform sampler1D transferFunc; // the custom transfer function
 
 out vec3 sphereColor;
 out float particleRadius;
@@ -31,6 +33,13 @@ bool iszero(vec2 v)
 bool iszero(vec3 v)
 {
     return iszero(length(v));
+}
+
+// used if no texture is set as the transfer function
+// v is a value between 0 and 1
+vec3 defaultTransferFunc(float v)
+{
+    return vec3((v*2.0f) +0.3f, (v) +0.1f, (0.5f*v) +0.1f);
 }
 
 // see https://github.com/tdd11235813/spheres_shader/tree/master/src/shader
@@ -53,11 +62,17 @@ void main()
         break;
     case 2: // vector magnitude
         float leng = smoothstep(lowerBound,upperBound,length(input_vector));
-        sphereColor = vec3((leng*2.0f) +0.3f, (leng) +0.1f, (0.5f*leng) +0.1f);
+        if(customTransferFunc)
+            sphereColor = texture(transferFunc,leng).xyz;
+        else
+            sphereColor = defaultTransferFunc(leng);
         break;
     case 3: // scalar
         float rho = smoothstep(lowerBound , upperBound, input_scalar);
-        sphereColor = vec3((rho*2.0f) +0.3f, (rho) +0.1f, (0.5f*rho) +0.1f);
+        if(customTransferFunc)
+            sphereColor = texture(transferFunc,rho).xyz;
+        else
+            sphereColor = defaultTransferFunc(rho);
         break;
     case 0: // constant
     default:

@@ -3,8 +3,8 @@ import glm
 import time
 
 from vispy import app, gloo, util
-from vispy.gloo import Program, VertexBuffer, IndexBuffer
-from vispy.util.transforms import perspective, translate, rotate
+from vispy.gloo import Program
+from vispy.util.transforms import perspective
 
 from camera import Camera, CameraInputHandler
 
@@ -45,9 +45,9 @@ class Canvas(app.Canvas):
 
         # vector field for color
         # self.program['input_vector'] =
-        # scalar field for color
-        # self.program['input_scalar'] =
-
+        # scalar field, used for color in color mode 3
+        self.program['input_scalar'] = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], dtype=np.float32)
+        # radius per particle, set self.program['enableSizePerParticle']  = True to enable
         self.program['input_radius'] = [[0.15], [0.1], [0.2], [0.1], [0.2], [0.05], [0.1], [0.15], [0.1]]
 
         # size
@@ -61,12 +61,23 @@ class Canvas(app.Canvas):
         self.program['ambientLight'] = (0.1, 0.1, 0.1)  # ambient light color
         self.program['lightInViewSpace'] = True  # should the light move around with the camera?
 
-        # sphere look
+        # transfer function / color
+        self.program['colorMode'] = 3  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
         self.program['defaultColor'] = (1, 1, 1)  # particle color in color mode 0
+        self.program['lowerBound'] = 0.0  # lowest value of scalar field / vector field magnitude
+        self.program['upperBound'] = 1.0  # lowest value of scalar field / vector field magnitude
+        self.program['customTransferFunc'] = True  # set to true to use a custom transfer function
+        # Transfer function uses a 1D Texture.
+        # Provide 1D list of colors (r,g,b) as the textures data attribute, colors will be evenly spread over
+        # the range [lowerBound,upperBound]. Meaning particles where the scalar is equal to lowerBound will
+        # have the first specified color, the one with a scalar equal to lowerBound will have the last. Values that
+        # lie in between the colors are interpolated linearly
+        self.program['transferFunc'] = gloo.Texture1D( data=np.array([(0,0,0), (1,0.4,0.3)]).astype(np.float32),
+                                                     format='rgb', interpolation='linear', internalformat='rgb8')
+
+
+        # sphere look
         self.program['brightness'] = 1  # additional brightness control
-        self.program['colorMode'] = 0  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
-        self.program['lowerBound'] = 0  # lowest value of scalar field / vector field magnitude
-        self.program['upperBound'] = 1  # lowest value of scalar field / vector field magnitude
         self.program['materialAlpha'] = 1.0  # set lower than one to make spheres transparent
         self.program['materialShininess'] = 4.0  # material shininess
 
@@ -80,7 +91,7 @@ class Canvas(app.Canvas):
         self.program['spriteScale'] = 1.1  # increase this if spheres appear to have cut off edges
 
         # style of blending
-        self.useAdditiveBlending(True)
+        self.useAdditiveBlending(False)
 
         ############################################
 
