@@ -1,6 +1,8 @@
 #version 450
 //#extension GL_ARB_conservative_depth : require
 //layout (depth_greater) out float gl_FragDepth; // enable early depth test
+#define PI 3.14159265359f
+#define TWOPI 6.28318530718f
 
 struct Material
 {
@@ -45,6 +47,10 @@ uniform bool enableEdgeHighlights; // draw dark rings on the edges
 uniform mat4 view; // view matrix
 uniform mat4 projection; // projection matrix
 
+uniform bool useTexture; // use a texture together with the color
+uniform bool uvUpY; // use z as up for texture coordinates
+uniform sampler2D colorTexture; // texture to use
+
 // calculate 3d position on the sphere
 // returns false if we are not on the sphere
 // see https://github.com/tdd11235813/spheres_shader/tree/master/src/shader
@@ -77,6 +83,26 @@ bool ImposterSphere(in const vec3 viewPosOnPlane, in const vec3 viewSphereCenter
     return true;
 }
 
+// computes texture coordinates for thhe sphere
+vec2 getUVCoords(in const vec3 viewSphereCenter, in const float radius, in const vec3 viewNormal)
+{
+    vec3 viewPos= viewSphereCenter + viewNormal*radius;
+    mat4 invView = inverse(view);
+    vec3 posWorld = vec3(invView * vec4(viewPos,1));
+    vec3 centerWorld = vec3(invView * vec4(viewSphereCenter,1));
+    vec3 pos = posWorld - centerWorld;
+    vec2 uv;
+
+    if(!uvUpY)
+        pos.xyz = pos.xzy;
+
+    float phi = acos(pos.z / radius);
+    vec2 spherical = vec2(  atan(pos.y,pos.x), phi);
+    uv = vec2( (PI+spherical.x) / TWOPI, spherical.y / PI);
+
+    return uv;
+}
+
 // computes blinn phong lighting
 vec3 BlinnPhong(in const Material mat, in const Light light, in const vec3 viewPosition, in const vec3 viewDir, in const vec3 viewNormal)
 {
@@ -103,7 +129,7 @@ vec3 BlinnPhong(in const Material mat, in const Light light, in const vec3 viewP
 void main()
 {
     // define material
-    const Material mat = Material(  vec3(color.rgb),
+    Material mat = Material(  vec3(color.rgb),
                                     vec3(color.rgb),
                                     vec3(color.rgb),
                                     materialShininess,
@@ -143,6 +169,17 @@ void main()
             const vec4 clipPos = projection * vec4(viewPosOnSphere, 1.0f);
             gl_FragDepth = ((gl_DepthRange.diff * (clipPos.z / clipPos.w)) + gl_DepthRange.near + gl_DepthRange.far) / 2.0f;
 
+            // texturing
+            if(useTexture)
+            {
+                // calculate uv coordinates on the sphere in latitude logitude space
+                vec2 uv = getUVCoords(viewSphereCenter.xyz,radius,viewNormal);
+                vec3 texColor = texture(colorTexture, uv).xyz;
+                mat.diffuse *= texColor;
+                mat.specular *= texColor;
+                mat.ambient *= texColor;
+            }
+
             // lighting
             const vec3 viewDir = normalize(-viewPosOnSphere);
             const vec3 color = BlinnPhong(mat, light, viewPosOnSphere, viewDir, viewNormal);
@@ -157,4 +194,5 @@ void main()
             discard;
         }
     }
+//    fragment_color.xyz = mat.diffuse; //texture(colorTexture, vec2(0.5,0.5)).xyz;
 }

@@ -8,6 +8,13 @@ from vispy.util.transforms import perspective
 
 from camera import Camera, CameraInputHandler
 
+def _checkerboard(size=64,tiles=4):
+    return np.reshape(
+                np.kron(
+                    np.kron([[1, 0] * tiles, [0, 1] * tiles] * tiles, np.ones((size, size))),
+                    [1,1,1]),
+            (2*tiles*size,2*tiles*size,3) )
+
 class Canvas(app.Canvas):
     def __init__(self):
         app.Canvas.__init__(self, size=(512, 512), title='Particle Renderer', keys='interactive')
@@ -62,24 +69,29 @@ class Canvas(app.Canvas):
         self.program['lightInViewSpace'] = True  # should the light move around with the camera?
 
         # transfer function / color
-        self.program['colorMode'] = 3  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
+        self.program['colorMode'] = 0  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
         self.program['defaultColor'] = (1, 1, 1)  # particle color in color mode 0
         self.program['lowerBound'] = 0.0  # lowest value of scalar field / vector field magnitude
         self.program['upperBound'] = 1.0  # lowest value of scalar field / vector field magnitude
-        self.program['customTransferFunc'] = True  # set to true to use a custom transfer function
+        self.program['customTransferFunc'] = False  # set to true to use a custom transfer function
         # Transfer function uses a 1D Texture.
         # Provide 1D list of colors (r,g,b) as the textures data attribute, colors will be evenly spread over
         # the range [lowerBound,upperBound]. Meaning particles where the scalar is equal to lowerBound will
         # have the first specified color, the one with a scalar equal to lowerBound will have the last. Values that
         # lie in between the colors are interpolated linearly
-        self.program['transferFunc'] = gloo.Texture1D( data=np.array([(0,0,0), (1,0.4,0.3)]).astype(np.float32),
-                                                     format='rgb', interpolation='linear', internalformat='rgb8')
+        self.program['transferFunc'] = gloo.Texture1D(format='rgb', interpolation='linear', internalformat='rgb8',
+                                                        data=np.array([(0,0,0), (1,0.4,0.3)]).astype(np.float32))
 
 
         # sphere look
         self.program['brightness'] = 1  # additional brightness control
         self.program['materialAlpha'] = 1.0  # set lower than one to make spheres transparent
         self.program['materialShininess'] = 4.0  # material shininess
+        self.program['useTexture'] = True  # use the below texture for coloring (will be tinted according to set color)
+        # provide a numpy array of shaper (x,y,3) for rgb pixels of the 2d image
+        self.program['colorTexture'] = gloo.Texture2D(format='rgb', interpolation='linear', internalformat='rgb8',
+                                                        data=_checkerboard().astype(np.float32) )
+        self.program['uvUpY'] = False  # rotates texture by 90 degrees so that sphere poles are along the Y axis
 
         # settings for flat shading
         self.program['renderFlatDisks'] = False  # render flat discs instead of spheres
