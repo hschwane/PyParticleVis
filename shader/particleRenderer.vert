@@ -4,7 +4,7 @@ in vec3 input_position; // positions where spheres are rendered
 in vec3 input_vector; // vector field for color
 in float input_scalar; // scalar field for color
 
-uniform vec3 defaultColor; // particle color in color mode 5
+uniform vec3 defaultColor; // particle color in color mode 0
 uniform float brightness; // additional brightness control
 uniform int colorMode; // 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
 uniform float upperBound; // highest value of scalar field / vector field magnitude

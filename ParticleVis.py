@@ -5,7 +5,6 @@ import time
 from vispy import app, gloo, util
 from vispy.gloo import Program, VertexBuffer, IndexBuffer
 from vispy.util.transforms import perspective, translate, rotate
-from vispy.geometry import create_cube
 
 from camera import Camera, CameraInputHandler
 
@@ -34,41 +33,45 @@ class Canvas(app.Canvas):
         self.program = Program()
         self.program.set_shaders(vertexString, fragmentString, geomString, True)
 
-        # upload some point data
+        ######################################
+        # settings
+
+        # // positions where spheres are rendered
         self.program['input_position'] = [(0,0,0),(1,1,1),
                                           (1,1,-1),(1,-1,1),(1,-1,-1),
                                           (-1,1,1),(-1,1,-1),(-1,-1,1),
                                           (-1,-1,-1)]
 
-        ######################################
-        # settings
+        # vector field for color
+        # self.program['input_vector'] =
+        # scalar field for color
+        # self.program['input_scalar'] =
 
         # light settings
-        self.program['lightPosition'] = (500, 500, 1000)
-        self.program['lightDiffuse'] = (0.4, 0.4, 0.4)
-        self.program['lightSpecular'] = (0.3, 0.3, 0.3)
-        self.program['ambientLight'] = (0.1, 0.1, 0.1)
-        self.program['lightInViewSpace'] = True
+        self.program['lightPosition'] = (500, 500, 1000)  # position of the ligth
+        self.program['lightDiffuse'] = (0.4, 0.4, 0.4)  # diffuse color of the light
+        self.program['lightSpecular'] = (0.3, 0.3, 0.3)  # specular color of the light
+        self.program['ambientLight'] = (0.1, 0.1, 0.1)  # ambient light color
+        self.program['lightInViewSpace'] = True  # should the light move around with the camera?
 
         # sphere look
-        self.program['sphereRadius'] = 0.15
-        self.program['defaultColor'] = (1, 1, 1)
-        self.program['brightness'] = 1
-        self.program['colorMode'] = 0
-        self.program['lowerBound'] = 0
-        self.program['upperBound'] = 1
-        self.program['materialAlpha'] = 1.0
-        self.program['materialShininess'] = 4.0
+        self.program['sphereRadius'] = 0.15  # size of the spheres
+        self.program['defaultColor'] = (1, 1, 1)  # particle color in color mode 0
+        self.program['brightness'] = 1  # additional brightness control
+        self.program['colorMode'] = 0  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
+        self.program['lowerBound'] = 0  # lowest value of scalar field / vector field magnitude
+        self.program['upperBound'] = 1  # lowest value of scalar field / vector field magnitude
+        self.program['materialAlpha'] = 1.0  # set lower than one to make spheres transparent
+        self.program['materialShininess'] = 4.0  # material shininess
 
         # settings for flat shading
-        self.program['renderFlatDisks'] = False
-        self.program['flatFalloff'] = False
+        self.program['renderFlatDisks'] = False  # render flat discs instead of spheres
+        self.program['flatFalloff'] = False  # when using flat discs, enable this darken the edges
 
         # settings for additional depth cues
-        self.program['enableEdgeHighlights'] = False
+        self.program['enableEdgeHighlights'] = False  # add black adge around the particles for better depth perception
 
-        # increase this if spheres appear to have cut away edges
-        self.program['spriteScale'] = 1.1
+        self.program['spriteScale'] = 1.1  # increase this if spheres appear to have cut off edges
 
         ############################################
 
