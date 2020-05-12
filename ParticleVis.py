@@ -87,7 +87,7 @@ class Canvas(app.Canvas):
         self.program['brightness'] = 1  # additional brightness control
         self.program['materialAlpha'] = 1.0  # set lower than one to make spheres transparent
         self.program['materialShininess'] = 4.0  # material shininess
-        self.program['useTexture'] = True  # use the below texture for coloring (will be tinted according to set color)
+        self.program['useTexture'] = False  # use the below texture for coloring (will be tinted according to set color)
         # provide a numpy array of shaper (x,y,3) for rgb pixels of the 2d image
         self.program['colorTexture'] = gloo.Texture2D(format='rgb', interpolation='linear', internalformat='rgb8',
                                                         data=_checkerboard().astype(np.float32) )
@@ -150,7 +150,6 @@ class Canvas(app.Canvas):
     def on_draw(self, event):
         # clear window content
         gloo.clear(color=True, depth=True)
-
 
         # calculate dt (time since last frame)
         newTime = time.time()

@@ -83,7 +83,7 @@ bool ImposterSphere(in const vec3 viewPosOnPlane, in const vec3 viewSphereCenter
     return true;
 }
 
-// computes texture coordinates for thhe sphere
+// computes texture coordinates for the sphere
 vec2 getUVCoords(in const vec3 viewSphereCenter, in const float radius, in const vec3 viewNormal)
 {
     vec3 viewPos= viewSphereCenter + viewNormal*radius;
@@ -194,5 +194,4 @@ void main()
             discard;
         }
     }
-//    fragment_color.xyz = mat.diffuse; //texture(colorTexture, vec2(0.5,0.5)).xyz;
 }
