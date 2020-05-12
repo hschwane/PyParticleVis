@@ -79,6 +79,9 @@ class Canvas(app.Canvas):
 
         self.program['spriteScale'] = 1.1  # increase this if spheres appear to have cut off edges
 
+        # style of blending
+        self.useAdditiveBlending(True)
+
         ############################################
 
         # model matrix
@@ -97,8 +100,17 @@ class Canvas(app.Canvas):
         self._lastTime = time.time()
 
         # set opengl settings and show
-        gloo.set_state(clear_color=(0.30, 0.30, 0.35, 1.00), depth_test=True)
+        gloo.set_state(clear_color=(0.30, 0.30, 0.35, 1.00))
         self.show()
+
+    def useAdditiveBlending(self, enable):
+        if enable:
+            gloo.set_blend_func('one','one')
+            gloo.set_blend_equation('func_add')
+            gloo.set_state(depth_test = False, blend = True)
+        else:
+            gloo.set_state(depth_test = True, blend = False)
+
 
     def on_mouse_move(self, event):
         self.camInputHandler.on_mouse_move(event)
@@ -116,6 +128,7 @@ class Canvas(app.Canvas):
         # clear window content
         gloo.clear(color=True, depth=True)
 
+
         # calculate dt (time since last frame)
         newTime = time.time()
         dt = newTime - self._lastTime
@@ -126,7 +139,7 @@ class Canvas(app.Canvas):
         self.cam.update(dt)
         self.program['view'] = self.cam.viewMatrix
 
-        # draw
+        # draw particles
         self.program.draw('points')
 
         # update window content
