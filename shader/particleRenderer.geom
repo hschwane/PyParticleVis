@@ -5,11 +5,11 @@ layout(triangle_strip, max_vertices=4) out;
 
 uniform mat4 view; // view matrix
 uniform mat4 projection; // projection matrix
-uniform float sphereRadius; // radius of the spheres
 uniform float spriteScale; // increase for high fild of view, if spheres seem to be cut of on the edges
 uniform bool renderFlatDisks; // render disks instead of spheres
 
 in vec3 sphereColor[];
+in float particleRadius[];
 
 flat out vec3 color;
 flat out float radius;
@@ -25,7 +25,7 @@ void main()
 {
     // Output vertex position
     color = sphereColor[0];
-    radius = sphereRadius;
+    radius = particleRadius[0];
     viewSphereCenter = view * gl_in[0].gl_Position;
 
     // build transform matrix to get the quad from camera origin to it's proper position in camera (view) coordinates

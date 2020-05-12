@@ -42,10 +42,17 @@ class Canvas(app.Canvas):
                                           (-1,1,1),(-1,1,-1),(-1,-1,1),
                                           (-1,-1,-1)]
 
+
         # vector field for color
         # self.program['input_vector'] =
         # scalar field for color
         # self.program['input_scalar'] =
+
+        self.program['input_radius'] = [[0.15],[0.1],[0.2],[0.1],[0.2],[0.05],[0.1],[0.15],[0.1]]
+
+        # size
+        self.program['enableSizePerParticle'] = False  # enable this and set a size for each particle above
+        self.program['sphereRadius'] = 0.15  # radius of the spheres if "size per particle" is disabled
 
         # light settings
         self.program['lightPosition'] = (500, 500, 1000)  # position of the ligth
@@ -55,7 +62,6 @@ class Canvas(app.Canvas):
         self.program['lightInViewSpace'] = True  # should the light move around with the camera?
 
         # sphere look
-        self.program['sphereRadius'] = 0.15  # size of the spheres
         self.program['defaultColor'] = (1, 1, 1)  # particle color in color mode 0
         self.program['brightness'] = 1  # additional brightness control
         self.program['colorMode'] = 0  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
@@ -69,7 +75,7 @@ class Canvas(app.Canvas):
         self.program['flatFalloff'] = False  # when using flat discs, enable this darken the edges
 
         # settings for additional depth cues
-        self.program['enableEdgeHighlights'] = False  # add black adge around the particles for better depth perception
+        self.program['enableEdgeHighlights'] = False  # add black edge around the particles for better depth perception
 
         self.program['spriteScale'] = 1.1  # increase this if spheres appear to have cut off edges
 

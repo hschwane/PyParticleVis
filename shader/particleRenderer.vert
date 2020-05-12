@@ -3,6 +3,7 @@
 in vec3 input_position; // positions where spheres are rendered
 in vec3 input_vector; // vector field for color
 in float input_scalar; // scalar field for color
+in float input_radius; // size of each particle, if size per particle is enabled
 
 uniform vec3 defaultColor; // particle color in color mode 0
 uniform float brightness; // additional brightness control
@@ -10,8 +11,11 @@ uniform int colorMode; // 1: color by vector field direction, 2: color by vector
 uniform float upperBound; // highest value of scalar field / vector field magnitude
 uniform float lowerBound; // lowest value of scalar field / vector field magnitude
 uniform mat4 model; // model matrix of the object
+uniform bool enableSizePerParticle; // should every particle have a differnt size?
+uniform float sphereRadius; // radius of the spheres when enableSizePerParticle is false
 
 out vec3 sphereColor;
+out float particleRadius;
 
 // some helper functions
 bool iszero(float f)
@@ -60,6 +64,11 @@ void main()
         sphereColor = defaultColor;
         break;
     }
+
+    if(enableSizePerParticle)
+        particleRadius = input_radius;
+    else
+        particleRadius = sphereRadius;
 
     sphereColor *= brightness;
 }
