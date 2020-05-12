@@ -12,11 +12,6 @@ class Canvas(app.Canvas):
     def __init__(self):
         app.Canvas.__init__(self, size=(512, 512), title='Particle Renderer', keys='interactive')
 
-        # settings
-        self.nearDistance = 0.1
-        self.farDistance = 20
-        self.fov = 45.0 # field of view in degree
-
         # enable geometry shader
         gloo.gl.use_gl('gl+')
 
@@ -36,10 +31,16 @@ class Canvas(app.Canvas):
         ######################################
         # settings
 
+        # when changing near/far or fov you have to call resetProjection() for the changes to take effect
+        # everything closer to the camera than near ot further away than far will not be drawn
+        self.nearDistance = 0.1
+        self.farDistance = 20
+        self.fov = 45.0  # field of view in degree
+
         # // positions where spheres are rendered
-        self.program['input_position'] = [(0,0,0),(1,1,1),
-                                          (1,1,-1),(1,-1,1),(1,-1,-1),
-                                          (-1,1,1),(-1,1,-1),(-1,-1,1),
+        self.program['input_position'] = [(0, 0, 0), (1, 1, 1),
+                                          (1,1,-1), (1,-1,1), (1,-1,-1),
+                                          (-1,1,1), (-1,1,-1), (-1,-1,1),
                                           (-1,-1,-1)]
 
 
@@ -48,7 +49,7 @@ class Canvas(app.Canvas):
         # scalar field for color
         # self.program['input_scalar'] =
 
-        self.program['input_radius'] = [[0.15],[0.1],[0.2],[0.1],[0.2],[0.05],[0.1],[0.15],[0.1]]
+        self.program['input_radius'] = [[0.15], [0.1], [0.2], [0.1], [0.2], [0.05], [0.1], [0.15], [0.1]]
 
         # size
         self.program['enableSizePerParticle'] = False  # enable this and set a size for each particle above
@@ -94,7 +95,7 @@ class Canvas(app.Canvas):
         self.reset_projection()
 
         # timing
-        self.lastTime = time.time()
+        self._lastTime = time.time()
 
         # set opengl settings and show
         gloo.set_state(clear_color=(0.30, 0.30, 0.35, 1.00), depth_test=True)
@@ -118,8 +119,8 @@ class Canvas(app.Canvas):
 
         # calculate dt (time since last frame)
         newTime = time.time()
-        dt = newTime - self.lastTime
-        self.lastTime = newTime
+        dt = newTime - self._lastTime
+        self._lastTime = newTime
 
         # update camera and view matrix
         self.camInputHandler.on_draw(dt)
@@ -133,9 +134,9 @@ class Canvas(app.Canvas):
         self.update()
 
     def on_resize(self, event):
-        self.reset_projection()
+        self.resetProjection()
 
-    def reset_projection(self):
+    def resetProjection(self):
         gloo.set_viewport(0, 0, *self.physical_size)
         projection = perspective(self.fov, self.size[0] / float(self.size[1]), self.nearDistance, self.farDistance)
         self.program['projection'] = projection
