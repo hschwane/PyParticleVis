@@ -7,3 +7,4 @@ visualizes point clouds in python using openGL with VisPy
 - PyGLM
 - PyOpenGL
 - VisPy
+- matplotlib (for color maps)
