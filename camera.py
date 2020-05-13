@@ -24,10 +24,11 @@ class Camera:
         # cameras internal state (DO NOT WRITE)
         self._movementInput = glm.vec3(0)
         self._rotationInput = glm.vec2(0)
-        self._desiredTransform = Transform(position)  # desired transform based on inputs
+        self._desiredTransform = Transform() # Transform(position)  # desired transform based on inputs
         self._desiredTargetDistance = 0  # desired distance along the front vector where the center for trackball mode lives
-        self._currentTransform = Transform(position)  # transform object describing orientation and position of camera
+        self._currentTransform = Transform() #Transform(position)  # transform object describing orientation and position of camera
         self._currentTargetDistance = 0  # distance along the front vector where the center for trackball mode lives
+        self.setPosition(position)
         self.setTarget(target)
 
         # variables depending on state, they are automatically updated when calling the Camera.update() (DO NOT WRITE, only read)
@@ -47,9 +48,10 @@ class Camera:
     def setPosition(self,position, interpolate=False):
         """Use to set the position of the camera. Position is expected to be a glm.vec3,
         interpolate is a bool. Set interpolate to true produces an animated camera movement"""
-        self._desiredTransform.position = position
+        newPos = glm.vec3(position.x,position.y,position.z) # avoid python binding a reference to the position
+        self._desiredTransform.position = newPos
         if not interpolate:
-            self._currentTransform.position = position
+            self._currentTransform.position = newPos
 
     def rotateH(self, dPhi):
         self._rotationInput.x += dPhi * (self.fpsRotationSpeed if self.mode == 1 else self.tbRotationSpeed)

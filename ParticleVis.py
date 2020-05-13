@@ -44,6 +44,19 @@ class Canvas(app.Canvas):
         self.farDistance = 20
         self.fov = 45.0  # field of view in degree
 
+        # initial camera position
+        # call resetCamera or press "R" to go the initial position
+        self.initialCamPosition = glm.vec3(3,3,3)
+        self.initialCamTarget = glm.vec3(0, 0, 0)
+
+        # you can change settings of the camera yourself with self.cam.xxx = yyy
+        # you can also move the camera by calling setPosition / setTarget and
+        # thereby predefine an animation (eg for videos/talks)
+        # you can also change the camera control mode 1 = fly camera, 0 = trackball camera
+        self.cam = Camera(1, self.initialCamPosition, self.initialCamTarget)
+        # the CameraInputHandler links the camera to keybiard and mouse input, you can also change keybindings there
+        self.camInputHandler = CameraInputHandler(self.cam)
+
         # // positions where spheres are rendered
         self.program['input_position'] = [(0, 0, 0), (1, 1, 1),
                                           (1,1,-1), (1,-1,1), (1,-1,-1),
@@ -133,9 +146,7 @@ class Canvas(app.Canvas):
         self.program['model'] = model
 
         # camera and view matrix
-        self.cam = Camera(1, glm.vec3(3, 3, 3))
         self.program['view'] = self.cam.viewMatrix
-        self.camInputHandler = CameraInputHandler(self.cam)
 
         # projection matrix
         self._projection = glm.mat4(1.0)
@@ -147,6 +158,10 @@ class Canvas(app.Canvas):
 
         # show window
         self.show()
+
+    def resetCamera(self):
+        self.cam.setPosition(self.initialCamPosition,True)
+        self.cam.setTarget(self.initialCamTarget,True)
 
     def useAdditiveBlending(self, enable):
         if enable:
@@ -161,7 +176,11 @@ class Canvas(app.Canvas):
         self.camInputHandler.on_mouse_move(event)
 
     def on_key_press(self, event):
-        self.camInputHandler.on_key_pressed(event)
+        if event.key == 'R':
+            self.resetCamera()
+            event.handled = True
+        else:
+            self.camInputHandler.on_key_pressed(event)
 
     def on_key_release(self, event):
         self.camInputHandler.on_key_released(event)
