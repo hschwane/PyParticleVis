@@ -5,6 +5,7 @@ import time
 from vispy import app, gloo, util
 from vispy.gloo import Program
 from vispy.util.transforms import perspective
+from matplotlib import cm
 
 from camera import Camera, CameraInputHandler
 
@@ -78,21 +79,21 @@ class Canvas(app.Canvas):
         gloo.set_state(clear_color=(0.30, 0.30, 0.35, 1.00))  # background color
 
         # transfer function / color
-        self.program['colorMode'] = 0  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
+        self.program['colorMode'] = 3  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
         self.program['defaultColor'] = (1, 1, 1)  # particle color in color mode 0
         self.program['lowerBound'] = 0.0  # lowest value of scalar field / vector field magnitude
         self.program['upperBound'] = 1.0  # lowest value of scalar field / vector field magnitude
-        self.program['customTransferFunc'] = False  # set to true to use a custom transfer function
+        self.program['customTransferFunc'] = True  # set to true to use a custom transfer function
         # Transfer function uses a 1D Texture.
         # Provide 1D list of colors (r,g,b) as the textures data attribute, colors will be evenly spread over
         # the range [lowerBound,upperBound]. Meaning particles where the scalar is equal to lowerBound will
         # have the first specified color, the one with a scalar equal to lowerBound will have the last. Values that
         # lie in between the colors are interpolated linearly
-        self.program['transferFunc'] = gloo.Texture1D(format='rgb', interpolation='linear', internalformat='rgb8',
-                                                        data=np.array([(0,0,0), (1,0.4,0.3)]).astype(np.float32))
+        self.program['transferFunc'] = gloo.Texture1D(format='rgba', interpolation='linear', internalformat='rgba8',
+                                                        data=cm.viridis(range(256)).astype(np.float32))
         # sphere look
         self.program['brightness'] = 1  # additional brightness control
-        self.program['materialAlpha'] = 1.0  # set lower than one to make spheres transparent
+        self.program['materialAlpha'] = 1.0  # set lower than one to make spheres
         self.program['materialShininess'] = 4.0  # material shininess
         self.program['useTexture'] = False  # use the below texture for coloring (will be tinted according to set color)
         # provide a numpy array of shaper (x,y,3) for rgb pixels of the 2d image
