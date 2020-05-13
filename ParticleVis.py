@@ -61,12 +61,8 @@ class Canvas(app.Canvas):
         self.program['enableSizePerParticle'] = False  # enable this and set a size for each particle above
         self.program['sphereRadius'] = 0.15  # radius of the spheres if "size per particle" is disabled
 
-        # light settings
-        self.program['lightPosition'] = (500, 500, 1000)  # position of the ligth
-        self.program['lightDiffuse'] = (0.4, 0.4, 0.4)  # diffuse color of the light
-        self.program['lightSpecular'] = (0.3, 0.3, 0.3)  # specular color of the light
-        self.program['ambientLight'] = (0.1, 0.1, 0.1)  # ambient light color
-        self.program['lightInViewSpace'] = True  # should the light move around with the camera?
+        # background
+        gloo.set_state(clear_color=(0.30, 0.30, 0.35, 1.00))  # background color
 
         # transfer function / color
         self.program['colorMode'] = 0  # 1: color by vector field direction, 2: color by vector field magnitude, 3: color by scalar field, 0: constant color
@@ -81,8 +77,6 @@ class Canvas(app.Canvas):
         # lie in between the colors are interpolated linearly
         self.program['transferFunc'] = gloo.Texture1D(format='rgb', interpolation='linear', internalformat='rgb8',
                                                         data=np.array([(0,0,0), (1,0.4,0.3)]).astype(np.float32))
-
-
         # sphere look
         self.program['brightness'] = 1  # additional brightness control
         self.program['materialAlpha'] = 1.0  # set lower than one to make spheres transparent
@@ -93,6 +87,13 @@ class Canvas(app.Canvas):
                                                         data=_checkerboard().astype(np.float32) )
         self.program['uvUpY'] = False  # rotates texture by 90 degrees so that sphere poles are along the Y axis
 
+        # light settings
+        self.program['lightPosition'] = (500, 500, 1000)  # position of the ligth
+        self.program['lightDiffuse'] = (0.4, 0.4, 0.4)  # diffuse color of the light
+        self.program['lightSpecular'] = (0.3, 0.3, 0.3)  # specular color of the light
+        self.program['ambientLight'] = (0.1, 0.1, 0.1)  # ambient light color
+        self.program['lightInViewSpace'] = True  # should the light move around with the camera?
+
         # settings for flat shading
         self.program['renderFlatDisks'] = False  # render flat discs instead of spheres
         self.program['flatFalloff'] = False  # when using flat discs, enable this darken the edges
@@ -100,12 +101,32 @@ class Canvas(app.Canvas):
         # settings for additional depth cues
         self.program['enableEdgeHighlights'] = False  # add black edge around the particles for better depth perception
 
-        self.program['spriteScale'] = 1.1  # increase this if spheres appear to have cut off edges
-
         # style of blending
         self.useAdditiveBlending(False)
 
+        # orientation helper
+        self.enableOrientationIndicator = True  # enable / disable orientation indicator in the lower left
+        self.enableOriginIndicator = True  # enable / disable orientation indicator at the origin
+        self.originIndicatorSize = 1.0  # change size of the origin indicator
+
+        # other
+        self.program['spriteScale'] = 1.1  # increase this if spheres appear to have cut off edges
+
         ############################################
+
+        # setup orientation indicator
+
+        # load and compile shader
+        with open('shader/oriIndicator.frag', 'r') as file:
+            oriFragmentString = file.read()
+
+        with open('shader/oriIndicator.vert', 'r') as file:
+            oriVertexString = file.read()
+
+        self._oriProgram = Program(oriVertexString,oriFragmentString)
+        self._oriProgram['input_position'] = [ (0,0,0), (1,0,0),
+                                               (0,0,0), (0,1,0),
+                                               (0,0,0), (0,0,1)]
 
         # model matrix
         model = np.eye(4, dtype=np.float32)
@@ -117,13 +138,14 @@ class Canvas(app.Canvas):
         self.camInputHandler = CameraInputHandler(self.cam)
 
         # projection matrix
+        self._projection = glm.mat4(1.0)
+        self._oriProjection = glm.mat4(1.0)
         self.resetProjection()
 
         # timing
         self._lastTime = time.time()
 
-        # set opengl settings and show
-        gloo.set_state(clear_color=(0.30, 0.30, 0.35, 1.00))
+        # show window
         self.show()
 
     def useAdditiveBlending(self, enable):
@@ -147,6 +169,21 @@ class Canvas(app.Canvas):
     def on_mouse_wheel(self, event):
         self.camInputHandler.on_mouse_wheel(event)
 
+    def _drawOrientationIndicator(self):
+        gloo.set_state(line_width=5)
+        # we want the rotation of the camera but not the translation
+        view = glm.inverse(glm.mat4_cast(self.cam._currentTransform.orientation))
+        view = glm.scale( view, glm.vec3(0.25))
+        self._oriProgram['projection'] = self._oriProjection
+        self._oriProgram['view'] = view
+        self._oriProgram.draw('lines')
+
+    def _drawOriginIndicator(self):
+        gloo.set_state(line_width=2)
+        self._oriProgram['projection'] =  self._projection
+        self._oriProgram['view'] = glm.scale( self.cam.viewMatrix, glm.vec3(self.originIndicatorSize))
+        self._oriProgram.draw('lines')
+
     def on_draw(self, event):
         # clear window content
         gloo.clear(color=True, depth=True)
@@ -164,6 +201,12 @@ class Canvas(app.Canvas):
         # draw particles
         self.program.draw('points')
 
+        # draw orientation indicator
+        if self.enableOrientationIndicator:
+            self._drawOrientationIndicator()
+        if self.enableOriginIndicator:
+            self._drawOriginIndicator()
+
         # update window content
         self.update()
 
@@ -171,9 +214,16 @@ class Canvas(app.Canvas):
         self.resetProjection()
 
     def resetProjection(self):
+        # calculate projection
         gloo.set_viewport(0, 0, *self.physical_size)
-        projection = perspective(self.fov, self.size[0] / float(self.size[1]), self.nearDistance, self.farDistance)
-        self.program['projection'] = projection
+        aspect = self.size[0] / float(self.size[1])
+        self._projection = perspective(self.fov, aspect, self.nearDistance, self.farDistance)
+        self.program['projection'] = self._projection
+
+        # calculate projection for the orientation indicator in the lower left
+        orthoScale = 1/500
+        orthoProjection = glm.ortho( -self.size[0]*orthoScale , self.size[0]*orthoScale, -self.size[1]*orthoScale, self.size[1]*orthoScale)
+        self._oriProjection = glm.translate(orthoProjection,glm.vec3(-self.size[0]*orthoScale+0.28,-self.size[1]*orthoScale+0.28,0))
 
 
 if __name__ == '__main__':
